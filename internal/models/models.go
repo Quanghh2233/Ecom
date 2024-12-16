@@ -25,9 +25,9 @@ type User struct {
 
 type Product struct {
 	Product_ID   primitive.ObjectID `bson:"_id"`
-	Product_Name *string            `json:"productname"`
+	Product_Name *string            `json:"product_name"`
 	Price        *uint64            `json:"price"`
-	Rating       *float32           `json:"rating"`
+	Rating       *float64           `json:"rating"`
 	Image        *string            `json:"image"`
 }
 
@@ -35,7 +35,7 @@ type ProdutUser struct {
 	Product_ID   primitive.ObjectID `bson:"_id"`
 	Product_Name *string            `json:"product_name" bson:"product_name"`
 	Price        int                `json:"price" bson:"price"`
-	Rating       *uint              `json:"rating" bson:"rating"`
+	Rating       *float64           `json:"rating" bson:"rating"`
 	Image        *string            `json:"image" bson:"image"`
 }
 
