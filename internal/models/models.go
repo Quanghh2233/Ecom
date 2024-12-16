@@ -13,6 +13,7 @@ type User struct {
 	Password        *string            `json:"password" validate:"required,min=6"`
 	Email           *string            `json:"email" validate:"email,required"`
 	Phone           *string            `json:"phone" validate:"required"`
+	Role            string             `json:"role" bson:"role" validate:"require, oneof=admin seller customer"`
 	Token           *string            `json:"token"`
 	Refresh_Token   *string            `json:"refresh_token"`
 	Create_At       time.Time          `json:"create_at"`
