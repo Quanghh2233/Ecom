@@ -15,5 +15,6 @@ func UserRoutes(incomingRoutes *gin.Engine) {
 	incomingRoutes.PUT("/admin/updateproduct/:product_id", controllers.UpdateProduct())
 	incomingRoutes.GET("/users/productview", controllers.SearchProduct())
 	incomingRoutes.GET("/users/search", controllers.SearchProductByQuery())
+	incomingRoutes.GET("/products/filter", controllers.FilterProd())
 	incomingRoutes.DELETE("/admin/deleteproduct/:product_id", controllers.DeleteProduct())
 }
