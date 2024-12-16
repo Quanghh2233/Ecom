@@ -1,4 +1,4 @@
-package controller
+package controllers
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Quanghh2233/Ecommerce/internal/database"
-	model "github.com/Quanghh2233/Ecommerce/internal/models"
+	"github.com/Quanghh2233/Ecommerce/internal/models"
 	generate "github.com/Quanghh2233/Ecommerce/internal/token"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -45,10 +45,8 @@ func VerifyPassword(userPassword string, givenPassword string) (bool, string) {
 func Signup() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-
 		defer cancel()
-
-		var user model.User
+		var user models.User
 		if err := c.BindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -57,6 +55,7 @@ func Signup() gin.HandlerFunc {
 		validationErr := Validate.Struct(user)
 		if validationErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr})
+			return
 		}
 
 		count, err := UserCollection.CountDocuments(ctx, bson.M{"email": user.Email})
@@ -68,12 +67,11 @@ func Signup() gin.HandlerFunc {
 
 		if count > 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "user already exists"})
+			return
 		}
 
 		count, err = UserCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
-
 		defer cancel()
-
 		if err != nil {
 			log.Panic(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -82,6 +80,7 @@ func Signup() gin.HandlerFunc {
 
 		if count > 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "this phone.no is already in use"})
+			return
 		}
 
 		password := HashPassword(*user.Password)
@@ -95,19 +94,16 @@ func Signup() gin.HandlerFunc {
 		token, refreshtoken, _ := generate.TokenGenerator(*user.Email, *user.First_Name, *user.LastName, user.User_ID)
 		user.Token = &token
 		user.Refresh_Token = &refreshtoken
-		user.UserCart = make([]model.ProdutUser, 0)
-		user.Address_Details = make([]model.Address, 0)
-		user.Order_Status = make([]model.Order, 0)
-
+		user.UserCart = make([]models.ProdutUser, 0)
+		user.Address_Details = make([]models.Address, 0)
+		user.Order_Status = make([]models.Order, 0)
 		_, inserterr := UserCollection.InsertOne(ctx, user)
 		if inserterr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "the user did not get created"})
 			return
 		}
 		defer cancel()
-
 		c.JSON(http.StatusCreated, "Successfully signed in!")
-
 	}
 }
 
@@ -115,8 +111,8 @@ func Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
-		var user model.User
-		var founduser model.User
+		var user models.User
+		var founduser models.User
 
 		if err := c.BindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err})
@@ -153,7 +149,7 @@ func Login() gin.HandlerFunc {
 func ProductViewAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), time.Second*100)
-		var products model.Product
+		var products models.Product
 		defer cancel()
 		if err := c.BindJSON(&products); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -172,7 +168,7 @@ func ProductViewAdmin() gin.HandlerFunc {
 
 func SearchProduct() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var productList []model.Product
+		var productList []models.Product
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
@@ -204,7 +200,7 @@ func SearchProduct() gin.HandlerFunc {
 
 func SearchProductByQuery() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var searchProducts []model.Product
+		var searchProducts []models.Product
 		queryParam := c.Query("name")
 
 		if queryParam == "" {

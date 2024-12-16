@@ -1,4 +1,4 @@
-package model
+package models
 
 import (
 	"time"
@@ -27,7 +27,7 @@ type Product struct {
 	Product_ID   primitive.ObjectID `bson:"_id"`
 	Product_Name *string            `json:"productname"`
 	Price        *uint64            `json:"price"`
-	Rating       *uint8             `json:"rating"`
+	Rating       *float32           `json:"rating"`
 	Image        *string            `json:"image"`
 }
 

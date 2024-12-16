@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	model "github.com/Quanghh2233/Ecommerce/internal/models"
+	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,7 +29,7 @@ func AddProductToCart(ctx context.Context, prodCollection, userCollection *mongo
 		return ErrCantFindProduct
 	}
 
-	var productcart []model.ProdutUser
+	var productcart []models.ProdutUser
 	err = searchfromdb.All(ctx, &productcart)
 	if err != nil {
 		log.Println(err)
@@ -72,11 +72,11 @@ func BuyItemFromCart(ctx context.Context, userCollection *mongo.Collection, user
 		log.Println(err)
 		return ErrUserIdIsNotValid
 	}
-	var getcartitem model.User
-	var ordercart model.Order
+	var getcartitem models.User
+	var ordercart models.Order
 	ordercart.Order_ID = primitive.NewObjectID()
 	ordercart.Ordered_At = time.Now()
-	ordercart.Order_Cart = make([]model.ProdutUser, 0)
+	ordercart.Order_Cart = make([]models.ProdutUser, 0)
 	ordercart.Payment_method.COD = true
 	unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$usercart"}}}}
 	grouping := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$_id"}, {Key: "total", Value: bson.D{primitive.E{Key: "$sum", Value: "$usercart.price"}}}}}}
@@ -107,7 +107,7 @@ func BuyItemFromCart(ctx context.Context, userCollection *mongo.Collection, user
 	if err != nil {
 		log.Println(err)
 	}
-	usercart_empty := make([]model.ProdutUser, 0)
+	usercart_empty := make([]models.ProdutUser, 0)
 	filtered := bson.D{primitive.E{Key: "_id", Value: id}}
 	updated := bson.D{{Key: "$set", Value: bson.D{primitive.E{Key: "usercart", Value: usercart_empty}}}}
 	_, err = userCollection.UpdateOne(ctx, filtered, updated)
@@ -123,12 +123,12 @@ func InstantBuyer(ctx context.Context, prodCollection, userCollection *mongo.Col
 		log.Println(err)
 		return ErrUserIdIsNotValid
 	}
-	var product_details model.ProdutUser
-	var orders_details model.Order
+	var product_details models.ProdutUser
+	var orders_details models.Order
 
 	orders_details.Order_ID = primitive.NewObjectID()
 	orders_details.Ordered_At = time.Now()
-	orders_details.Order_Cart = make([]model.ProdutUser, 0)
+	orders_details.Order_Cart = make([]models.ProdutUser, 0)
 	orders_details.Payment_method.COD = true
 	err = prodCollection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: productID}}).Decode(&product_details)
 	if err != nil {

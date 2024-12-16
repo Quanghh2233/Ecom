@@ -1,4 +1,4 @@
-package controller
+package controllers
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Quanghh2233/Ecommerce/internal/database"
-	model "github.com/Quanghh2233/Ecommerce/internal/models"
+	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -123,7 +123,7 @@ func GetItemFromCart() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), time.Second*100)
 		defer cancel()
 
-		var filledcart model.User
+		var filledcart models.User
 		err := UserCollection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: usert_id}}).Decode(&filledcart)
 
 		if err != nil {
