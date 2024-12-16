@@ -6,3 +6,5 @@ go run cmd/main.go
 có lẽ là update phân quyền sau :v
 
 Thực ra là đã add đc :v
+
+Nma nó chưa mua đc :v Comneno
