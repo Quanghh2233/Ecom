@@ -35,7 +35,7 @@ func (app *Application) BuyFromCart() gin.HandlerFunc {
 
 func (app *Application) InstantBuy() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		productQueryID := c.Query("iD")
+		productQueryID := c.Query("id")
 		if productQueryID == "" {
 			log.Println("product id is empty")
 
