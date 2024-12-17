@@ -73,11 +73,13 @@ func BuyItemFromCart(ctx context.Context, userCollection *mongo.Collection, user
 		return ErrUserIdIsNotValid
 	}
 	var getcartitem models.User
+
 	var ordercart models.Order
 	ordercart.Order_ID = primitive.NewObjectID()
 	ordercart.Ordered_At = time.Now()
 	ordercart.Order_Cart = make([]models.ProdutUser, 0)
 	ordercart.Payment_method.COD = true
+
 	unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$usercart"}}}}
 	grouping := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$_id"}, {Key: "total", Value: bson.D{primitive.E{Key: "$sum", Value: "$usercart.price"}}}}}}
 	currentresults, err := userCollection.Aggregate(ctx, mongo.Pipeline{unwind, grouping})
@@ -101,9 +103,14 @@ func BuyItemFromCart(ctx context.Context, userCollection *mongo.Collection, user
 	if err != nil {
 		log.Println(err)
 	}
+	err = userCollection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: id}}).Decode((&getcartitem))
+	if err != nil {
+		log.Println(err)
+	}
+
 	filter2 := bson.D{primitive.E{Key: "_id", Value: id}}
 	update2 := bson.M{"$push": bson.M{"orders.$[].order_list": bson.M{"$each": getcartitem.UserCart}}}
-	_, err = userCollection.UpdateOne(ctx, filter2, update2)
+	_, err = userCollection.UpdateMany(ctx, filter2, update2)
 	if err != nil {
 		log.Println(err)
 	}
@@ -149,4 +156,19 @@ func InstantBuyer(ctx context.Context, prodCollection, userCollection *mongo.Col
 		log.Println(err)
 	}
 	return nil
+}
+
+func GetUserOrders(ctx context.Context, userCollection *mongo.Collection, userID string) ([]models.Order, error) {
+	uid, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, errors.New("invalid user ID")
+	}
+	var user models.User
+	filter := bson.M{"_id": uid}
+	err = userCollection.FindOne(ctx, filter).Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user.Order_Status, nil
 }

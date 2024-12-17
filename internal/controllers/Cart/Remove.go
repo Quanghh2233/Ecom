@@ -14,7 +14,7 @@ import (
 
 func (app *Application) RemoveItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		productQueryID := c.Query("iD")
+		productQueryID := c.Query("id")
 		if productQueryID == "" {
 			log.Println("product id is empty")
 
