@@ -5,6 +5,6 @@ go run cmd/main.go
 
 có lẽ là update phân quyền sau :v
 
-Thực ra là đã add đc :v
+Về cơ bản thì con hàng này đã xong :v
 
-Lỗi tổng tiền
+Đợi học FE rồi lại update thêm sau

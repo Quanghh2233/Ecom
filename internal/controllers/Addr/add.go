@@ -2,7 +2,6 @@ package Addr
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -25,48 +24,57 @@ func AddAddress() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		address, err := primitive.ObjectIDFromHex(user_id)
+		userObjID, err := primitive.ObjectIDFromHex(user_id)
 		if err != nil {
-			c.IndentedJSON(500, "Internal Server Error")
-		}
-		var addresses models.Address
-		addresses.Address_id = primitive.NewObjectID()
-		if err = c.BindJSON(&addresses); err != nil {
-			c.IndentedJSON(http.StatusNotAcceptable, err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+			return
 		}
 
-		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		var newAddress models.Address
+		newAddress.Address_id = primitive.NewObjectID()
 
-		match_filter := bson.D{{Key: "$match", Value: bson.D{primitive.E{Key: "_id", Value: address}}}}
-		unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$address"}}}}
-		group := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$address_id"}, {Key: "count", Value: bson.D{primitive.E{Key: "$sum", Value: 1}}}}}}
-
-		pointcursor, err := UserCollection.Aggregate(ctx, mongo.Pipeline{match_filter, unwind, group})
-		if err != nil {
-			c.IndentedJSON(500, "Internal Server Error")
+		if err := c.BindJSON(&newAddress); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid address format"})
+			return
 		}
 
-		var addressinfo []bson.M
-		if err = pointcursor.All(ctx, &addressinfo); err != nil {
-			panic(err)
-		}
-
-		var size int32
-		for _, address_no := range addressinfo {
-			count := address_no["count"]
-			size = count.(int32)
-		}
-		if size < 2 {
-			filter := bson.D{primitive.E{Key: "_id", Value: address}}
-			update := bson.D{{Key: "$push", Value: bson.D{primitive.E{Key: "address", Value: addresses}}}}
-			_, err := UserCollection.UpdateOne(ctx, filter, update)
-			if err != nil {
-				fmt.Println(err)
-			}
-		} else {
-			c.IndentedJSON(400, "Not Allowed ")
-		}
+		var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		ctx.Done()
+
+		matchFilter := bson.D{{Key: "$match", Value: bson.D{{Key: "_id", Value: userObjID}}}}
+		projectStage := bson.D{{Key: "$project", Value: bson.D{{Key: "addressCount", Value: bson.D{{Key: "$size", Value: "$address"}}}}}}
+
+		cursor, err := UserCollection.Aggregate(ctx, mongo.Pipeline{matchFilter, projectStage})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve address count"})
+			return
+		}
+
+		var result []bson.M
+		if err = cursor.All(ctx, &result); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process address count"})
+			return
+		}
+
+		var addressCount int32
+		if len(result) > 0 {
+			addressCount = result[0]["addressCount"].(int32)
+		}
+
+		if addressCount >= 2 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Not Allow "})
+			return
+		}
+
+		filter := bson.M{"_id": userObjID}
+		update := bson.M{"$push": bson.M{"address": newAddress}}
+
+		_, err = UserCollection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to add address"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Address added successfully"})
 	}
 }

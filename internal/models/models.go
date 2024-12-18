@@ -46,6 +46,7 @@ type Address struct {
 	Street     *string            `json:"street_name" bson:"street_name"`
 	City       *string            `json:"city_name" bson:"city_name"`
 	Pincode    *string            `json:"pin_code" bson:"pin_code"`
+	Type       string             `bson:"type" json:"type"`
 }
 
 type Order struct {

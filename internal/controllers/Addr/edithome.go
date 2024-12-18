@@ -16,30 +16,44 @@ func EditHomeAddress() gin.HandlerFunc {
 		user_id := c.Query("id")
 		if user_id == "" {
 			c.Header("Content-Type", "application/json")
-			c.JSON(http.StatusNotFound, gin.H{"Error": "Invalid"})
+			c.JSON(http.StatusNotFound, gin.H{"Error": "User ID is missing"})
 			c.Abort()
 			return
 		}
-		usert_id, err := primitive.ObjectIDFromHex(user_id)
+		userObjID, err := primitive.ObjectIDFromHex(user_id)
 		if err != nil {
-			c.IndentedJSON(500, "Internal Server Error")
-		}
-		var editaddress models.Address
-		if err := c.BindJSON(&editaddress); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-		}
-		var ctx, cancel = context.WithTimeout(context.Background(), time.Second*100)
-		defer cancel()
-		filter := bson.D{primitive.E{Key: "_id", Value: usert_id}}
-		update := bson.D{{Key: "$set", Value: bson.D{primitive.E{Key: "address.0.house_name", Value: editaddress.House}, {Key: "address.0.street_name", Value: editaddress.Street}, {Key: "address.0.city_name", Value: editaddress.City}, {Key: "address.0.pin_code", Value: editaddress.Pincode}}}}
-		_, err = UserCollection.UpdateOne(ctx, filter, update)
-		if err != nil {
-			c.IndentedJSON(500, "Something went wrong")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid User ID"})
 			return
 		}
 
+		var editAddress models.Address
+		if err := c.BindJSON(&editAddress); err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		ctx.Done()
-		c.IndentedJSON(200, "Successfully updated the Home address")
+
+		filter := bson.M{"_id": userObjID, "address.type": "home"}
+		update := bson.M{"$set": bson.M{
+			"address.$.house_name": editAddress.House,
+			"address.$.street":     editAddress.Street,
+			"address.$.city_name":  editAddress.City,
+			"address.$.pin_code":   editAddress.Pincode,
+		}}
+
+		result, err := UserCollection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to update address"})
+			return
+		}
+
+		if result.ModifiedCount == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"Error": "Home address not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"Message": "Successfully updated"})
 	}
 }

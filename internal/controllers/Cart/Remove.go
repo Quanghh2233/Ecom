@@ -23,7 +23,7 @@ func (app *Application) RemoveItem() gin.HandlerFunc {
 			return
 		}
 
-		userQueryID := c.Query("userID")
+		userQueryID := c.Query("userid")
 		if userQueryID == "" {
 			log.Println("user id is empty")
 
