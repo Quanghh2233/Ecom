@@ -6,6 +6,7 @@ import (
 
 	addr "github.com/Quanghh2233/Ecommerce/internal/controllers/Addr"
 	cart "github.com/Quanghh2233/Ecommerce/internal/controllers/Cart"
+	order "github.com/Quanghh2233/Ecommerce/internal/controllers/Order"
 
 	"github.com/Quanghh2233/Ecommerce/internal/database"
 	"github.com/Quanghh2233/Ecommerce/internal/middleware"
@@ -20,6 +21,7 @@ func main() {
 	}
 
 	app := cart.NewApplication(database.ProductData(database.Client, "Products"), database.UserData(database.Client, "Users"))
+	order := order.NewApplication(database.ProductData(database.Client, "Products"), database.UserData(database.Client, "Users"))
 
 	router := gin.New()
 	router.Use(gin.Logger())
@@ -34,9 +36,10 @@ func main() {
 	router.PUT("/edithomeaddress", addr.EditHomeAddress())
 	router.PUT("/editworkaddress", addr.EditWorkAddress())
 	router.GET("/deleteaddress", addr.DeleteAddress())
-	router.GET("/cartcheckout", app.BuyFromCart())
-	router.GET("/instantbuy", app.InstantBuy())
-	router.DELETE("/cancelorder", app.CancelOrder())
+	router.GET("/cartcheckout", order.BuyFromCart())
+	router.GET("/instantbuy", order.InstantBuy())
+	router.DELETE("/cancelorder", order.CancelOrder())
+	router.DELETE("/cancelall", order.CancelAll())
 	router.GET("/order_list", app.GetOrders())
 
 	log.Fatal(router.Run(":" + port))

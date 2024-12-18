@@ -1,4 +1,4 @@
-package Cart
+package order
 
 import (
 	"context"
@@ -12,9 +12,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func (app *Application) RemoveItem() gin.HandlerFunc {
+func (app *Application) InstantBuy() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		productQueryID := c.Query("id")
+		productQueryID := c.Query("pid")
 		if productQueryID == "" {
 			log.Println("product id is empty")
 
@@ -23,7 +23,7 @@ func (app *Application) RemoveItem() gin.HandlerFunc {
 			return
 		}
 
-		userQueryID := c.Query("userID")
+		userQueryID := c.Query("userid")
 		if userQueryID == "" {
 			log.Println("user id is empty")
 
@@ -43,13 +43,12 @@ func (app *Application) RemoveItem() gin.HandlerFunc {
 
 		defer cancel()
 
-		err = cart.RemoveCartItem(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
-
+		err = cart.InstantBuyer(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, err)
-			return
+
 		}
 
-		c.IndentedJSON(200, "Successfully removed item from cart")
+		c.IndentedJSON(200, "Successfully placed the order")
 	}
 }

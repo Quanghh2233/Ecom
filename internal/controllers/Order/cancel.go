@@ -1,4 +1,4 @@
-package Cart
+package order
 
 import (
 	"context"
@@ -7,73 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Quanghh2233/Ecommerce/internal/database"
+	cart "github.com/Quanghh2233/Ecommerce/internal/database/Cart"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-func (app *Application) BuyFromCart() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		userQueryID := c.Query("id")
-
-		if userQueryID == "" {
-			log.Panicln("user id is empty")
-			_ = c.AbortWithError(http.StatusBadRequest, errors.New("UserID is empty"))
-		}
-
-		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-
-		defer cancel()
-
-		err := database.BuyItemFromCart(ctx, app.userCollection, userQueryID)
-		if err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, err)
-		}
-		c.IndentedJSON(200, "Successfully placed the order")
-	}
-}
-
-func (app *Application) InstantBuy() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		productQueryID := c.Query("pid")
-		if productQueryID == "" {
-			log.Println("product id is empty")
-
-			_ = c.AbortWithError(http.StatusBadRequest, errors.New("product id is empty"))
-
-			return
-		}
-
-		userQueryID := c.Query("userid")
-		if userQueryID == "" {
-			log.Println("user id is empty")
-
-			_ = c.AbortWithError(http.StatusBadRequest, errors.New("user id is empty"))
-			return
-		}
-
-		productID, err := primitive.ObjectIDFromHex(productQueryID)
-
-		if err != nil {
-			log.Println(err)
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
-		}
-
-		var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
-
-		defer cancel()
-
-		err = database.InstantBuyer(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
-		if err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, err)
-
-		}
-
-		c.IndentedJSON(200, "Successfully placed the order")
-	}
-}
 
 func (app *Application) CancelOrder() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -129,5 +67,26 @@ func (app *Application) CancelOrder() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "Order successfully cancelled"})
+	}
+}
+
+func (app *Application) CancelAll() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.Query("userid")
+		if userID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
+			return
+		}
+
+		err := cart.CancelAllOrder(context.Background(), app.userCollection, userID)
+		if err != nil {
+			if err == cart.ErrUserIdIsNotValid {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cancel orders"})
+			}
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "All orders have been canceled"})
 	}
 }

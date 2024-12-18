@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Quanghh2233/Ecommerce/internal/database"
+	cart "github.com/Quanghh2233/Ecommerce/internal/database/Cart"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -43,7 +43,7 @@ func (app *Application) AddToCart() gin.HandlerFunc {
 
 		defer cancel()
 
-		err = database.AddProductToCart(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
+		err = cart.AddProductToCart(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, err)
 		}

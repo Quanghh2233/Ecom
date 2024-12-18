@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Quanghh2233/Ecommerce/internal/database"
+	cart "github.com/Quanghh2233/Ecommerce/internal/database/Cart"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,7 +25,7 @@ func (app *Application) GetOrders() gin.HandlerFunc {
 		defer cancel()
 
 		// Gọi hàm từ database để lấy danh sách đơn hàng
-		orders, err := database.GetUserOrders(ctx, app.userCollection, userQueryID)
+		orders, err := cart.GetUserOrders(ctx, app.userCollection, userQueryID)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
