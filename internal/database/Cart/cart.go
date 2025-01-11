@@ -17,6 +17,7 @@ var (
 	ErrCartEmpty          = errors.New("cart is empty")
 	ErrCantCancelOrders   = errors.New("can't cancel orders")
 	ErrCantBuyProduct     = errors.New("can't buy product")
+	ErrorNoItemFound      = errors.New("no item found")
 )
 
 func calculateTotalPrice(cart []models.ProdutUser) int {

@@ -3,6 +3,7 @@ package route
 import (
 	controllers "github.com/Quanghh2233/Ecommerce/internal/controllers/Adm"
 	Auth "github.com/Quanghh2233/Ecommerce/internal/controllers/Auth"
+	store "github.com/Quanghh2233/Ecommerce/internal/controllers/Store"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,5 +17,9 @@ func UserRoutes(incomingRoutes *gin.Engine) {
 	incomingRoutes.GET("/users/productview", controllers.SearchProduct())
 	incomingRoutes.GET("/users/search", controllers.SearchProductByQuery())
 	incomingRoutes.GET("/products/filter", controllers.FilterProd())
+	incomingRoutes.POST("/admin/stores", store.CreateStore())
+	incomingRoutes.POST("/stores/addproduct", store.CreateProduct())
 	incomingRoutes.DELETE("/admin/deleteproduct/:product_id", controllers.DeleteProduct())
+	incomingRoutes.GET("/stores/:store_id", store.GetStore())
+
 }

@@ -25,10 +25,13 @@ type User struct {
 }
 
 type Product struct {
-	Product_ID   primitive.ObjectID `bson:"_id"`
+	Product_ID   primitive.ObjectID `json:"product_id" bson:"product_id"`
+	Store_ID     primitive.ObjectID `json:"store_id" bson:"store_id"`
 	Product_Name *string            `json:"product_name"`
+	Description  string             `json:"description" bson:"description"`
 	Price        *uint64            `json:"price"`
 	Rating       *float64           `json:"rating"`
+	Options      []ProductOption    `json:"options" bson:"options"`
 	Image        *string            `json:"image"`
 }
 
@@ -61,4 +64,18 @@ type Order struct {
 type Payment struct {
 	Digital bool `json:"digital" bson:"digital"`
 	COD     bool `json:"cod" bson:"cod"`
+}
+
+type Store struct {
+	Store_Id    primitive.ObjectID `json:"store_id" bson:"store_id"`
+	Name        string             `json:"name" bson:"name"`
+	Description string             `json:"description" bson:"description"`
+	Owner       string             `json:"owner" bson:"owner"`
+	CreateAt    time.Time          `json:"create_at" bson:"create_at"`
+}
+
+type ProductOption struct {
+	Name  string  `json:"name" bson:"name"`
+	Value string  `json:"value" bson:"value"`
+	Price float64 `json:"price" bson:"price"`
 }
