@@ -1,4 +1,4 @@
-package Ecom
+package Adm
 
 import (
 	"context"

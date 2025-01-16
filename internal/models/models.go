@@ -7,29 +7,31 @@ import (
 )
 
 type User struct {
-	ID         primitive.ObjectID `json:"_id" bson:"_id"`
-	First_Name *string            `json:"first_name" validate:"required,min=2,max=30"`
-	LastName   *string            `json:"last_name" validate:"required,min=2,max=30"`
-	Password   *string            `json:"password" validate:"required,min=6"`
-	Email      *string            `json:"email" validate:"email,required"`
-	Phone      *string            `json:"phone" validate:"required"`
-	// Role            string             `json:"role" bson:"role" validate:"require, oneof=admin seller customer"`
-	Token           *string      `json:"token"`
-	Refresh_Token   *string      `json:"refresh_token"`
-	Create_At       time.Time    `json:"create_at"`
-	Update_At       time.Time    `json:"update_at"`
-	User_ID         string       `json:"user_id"`
-	UserCart        []ProdutUser `json:"usercart" bson:"usercart"`
-	Address_Details []Address    `json:"address" bson:"address"`
-	Order_Status    []Order      `json:"orders" bson:"orders"`
+	ID              primitive.ObjectID `json:"_id" bson:"_id"`
+	First_Name      *string            `json:"first_name" validate:"required,min=2,max=30"`
+	LastName        *string            `json:"last_name" validate:"required,min=2,max=30"`
+	Password        *string            `json:"password" validate:"required,min=6"`
+	Email           *string            `json:"email" validate:"email,required"`
+	Phone           *string            `json:"phone" validate:"required"`
+	Role            *Role              `json:"role" bson:"role"`
+	Token           *string            `json:"token"`
+	Refresh_Token   *string            `json:"refresh_token"`
+	Create_At       time.Time          `json:"create_at"`
+	Update_At       time.Time          `json:"update_at"`
+	User_ID         string             `json:"user_id"`
+	UserCart        []ProdutUser       `json:"usercart" bson:"usercart"`
+	Address_Details []Address          `json:"address" bson:"address"`
+	Order_Status    []Order            `json:"orders" bson:"orders"`
 }
 
 type Product struct {
 	Product_ID   primitive.ObjectID `json:"product_id" bson:"product_id"`
 	Store_ID     primitive.ObjectID `json:"store_id" bson:"store_id"`
-	Product_Name *string            `json:"product_name"`
+	Store_Name   string             `json:"store_name" bson:"store_name"`
+	Product_Name string             `json:"product_name"`
 	Description  string             `json:"description" bson:"description"`
-	Price        *uint64            `json:"price"`
+	Quantity     int                `json:"quantity" bson:"quantity"`
+	Price        uint64             `json:"price"`
 	Rating       *float64           `json:"rating"`
 	Options      []ProductOption    `json:"options" bson:"options"`
 	Image        *string            `json:"image"`
@@ -71,6 +73,8 @@ type Store struct {
 	Name        string             `json:"name" bson:"name"`
 	Description string             `json:"description" bson:"description"`
 	Owner       string             `json:"owner" bson:"owner"`
+	Email       string             `json:"email" bson:"email"`
+	Phone       string             `json:"phone" bson:"phone"`
 	CreateAt    time.Time          `json:"create_at" bson:"create_at"`
 }
 
@@ -78,4 +82,23 @@ type ProductOption struct {
 	Name  string  `json:"name" bson:"name"`
 	Value string  `json:"value" bson:"value"`
 	Price float64 `json:"price" bson:"price"`
+}
+
+// Role struct để lưu trong database
+type Role struct {
+	Role_ID     primitive.ObjectID `json:"role_id" bson:"_id"`
+	Name        string             `json:"name" bson:"name" validate:"required,oneof=ADMIN SELLER BUYER"`
+	Description string             `json:"description" bson:"description"`
+	Permissions []string           `json:"permissions" bson:"permissions"`
+	CreateAt    time.Time          `json:"create_at" bson:"create_at"`
+	UpdateAt    time.Time          `json:"update_at" bson:"update_at"`
+}
+
+func (r *Role) HasPermission(permission string) bool {
+	for _, p := range r.Permissions {
+		if p == permission {
+			return true
+		}
+	}
+	return false
 }

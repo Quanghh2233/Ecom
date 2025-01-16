@@ -1,4 +1,4 @@
-package Ecom
+package Store
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func CreateStore() gin.HandlerFunc {
+func (app *Application) AdmAddStore() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 		var newStore models.Store
@@ -24,7 +24,7 @@ func CreateStore() gin.HandlerFunc {
 		newStore.Store_Id = primitive.NewObjectID()
 		newStore.CreateAt = time.Now()
 
-		_, err := StoreCollection.InsertOne(ctx, newStore)
+		_, err := app.storeCollection.InsertOne(ctx, newStore)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create store"})
 			return

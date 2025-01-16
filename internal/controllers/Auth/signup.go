@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	helper "github.com/Quanghh2233/Ecommerce/internal/Helper"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	generate "github.com/Quanghh2233/Ecommerce/internal/token"
 	"github.com/gin-gonic/gin"
@@ -49,6 +50,12 @@ func Signup() gin.HandlerFunc {
 			return
 		}
 
+		role, err := helper.NewRole(models.DEFAULT_ROLE, "Buyer account")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user role"})
+			return
+		}
+
 		if count > 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "this phone.no is already in use"})
 			return
@@ -65,6 +72,7 @@ func Signup() gin.HandlerFunc {
 		token, refreshtoken, _ := generate.TokenGenerator(*user.Email, *user.First_Name, *user.LastName, user.User_ID)
 		user.Token = &token
 		user.Refresh_Token = &refreshtoken
+		user.Role = role
 		user.UserCart = make([]models.ProdutUser, 0)
 		user.Address_Details = make([]models.Address, 0)
 		user.Order_Status = make([]models.Order, 0)

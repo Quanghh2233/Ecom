@@ -1,7 +1,8 @@
-package Ecom
+package Adm
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"time"
 
@@ -30,16 +31,26 @@ func DeleteProduct() gin.HandlerFunc {
 		}
 
 		// Thực hiện xóa sản phẩm khỏi MongoDB
-		result, err := ProductCollection.DeleteOne(ctx, bson.M{"_id": objID})
+		result, err := ProductCollection.DeleteOne(ctx, bson.M{"product_id": objID})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete product"})
 			return
 		}
 
-		// Kiểm tra nếu sản phẩm không tồn tại
 		if result.DeletedCount == 0 {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
-			return
+			// Nếu không tìm thấy, thử tìm theo chuỗi số 0
+			result, err = ProductCollection.DeleteOne(ctx, bson.M{"product_id": "000000000000000000000000"})
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete product"})
+				return
+			}
+
+			// Kiểm tra nếu sản phẩm không tồn tại
+			if result.DeletedCount == 0 {
+				log.Println(err)
+				c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+				return
+			}
 		}
 
 		// Trả về kết quả thành công
