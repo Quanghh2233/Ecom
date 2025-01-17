@@ -26,12 +26,13 @@ type SignedDetails struct {
 var UserData *mongo.Collection = database.UserData(database.Client, "Users")
 var SECRET_KEY = os.Getenv("SECRET_KEY")
 
-func TokenGenerator(email string, firstname string, lastname string, uid string) (signedtoken string, signedrefreshtoken string, err error) {
+func TokenGenerator(email string, firstname string, lastname string, uid string, role string) (signedtoken string, signedrefreshtoken string, err error) {
 	claims := &SignedDetails{
 		Email:      email,
 		First_name: firstname,
 		Last_name:  lastname,
 		Uid:        uid,
+		Role:       role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(24)).Unix(),
 		},

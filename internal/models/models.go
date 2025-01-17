@@ -13,7 +13,7 @@ type User struct {
 	Password        *string            `json:"password" validate:"required,min=6"`
 	Email           *string            `json:"email" validate:"email,required"`
 	Phone           *string            `json:"phone" validate:"required"`
-	Role            *Role              `json:"role" bson:"role"`
+	Role            *Role              `json:"role" bson:"role" validate:"required,oneof=ADMIN SELLER BUYER"`
 	Token           *string            `json:"token"`
 	Refresh_Token   *string            `json:"refresh_token"`
 	Create_At       time.Time          `json:"create_at"`
@@ -40,6 +40,7 @@ type Product struct {
 type ProdutUser struct {
 	Product_ID   primitive.ObjectID `bson:"_id"`
 	Product_Name *string            `json:"product_name" bson:"product_name"`
+	Quantity     int                `json:"quantity" bson:"quantity"`
 	Price        int                `json:"price" bson:"price"`
 	Rating       *float64           `json:"rating" bson:"rating"`
 	Image        *string            `json:"image" bson:"image"`
@@ -87,7 +88,7 @@ type ProductOption struct {
 // Role struct để lưu trong database
 type Role struct {
 	Role_ID     primitive.ObjectID `json:"role_id" bson:"_id"`
-	Name        string             `json:"name" bson:"name" validate:"required,oneof=ADMIN SELLER BUYER"`
+	Name        string             `json:"role" bson:"name" validate:"required,oneof=ADMIN SELLER BUYER"`
 	Description string             `json:"description" bson:"description"`
 	Permissions []string           `json:"permissions" bson:"permissions"`
 	CreateAt    time.Time          `json:"create_at" bson:"create_at"`

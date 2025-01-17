@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,7 +30,7 @@ func GetItemFromCart() gin.HandlerFunc {
 		defer cancel()
 
 		var filledcart models.User
-		err := UserCollection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: usert_id}}).Decode(&filledcart)
+		err := global.UserCollection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: usert_id}}).Decode(&filledcart)
 
 		if err != nil {
 			log.Println(err)
@@ -40,7 +41,7 @@ func GetItemFromCart() gin.HandlerFunc {
 		filter_match := bson.D{{Key: "$match", Value: bson.D{primitive.E{Key: "_id", Value: usert_id}}}}
 		unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$usercart"}}}}
 		grouping := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$_id"}, {Key: "total", Value: bson.D{primitive.E{Key: "$sum", Value: "$usercart.price"}}}}}}
-		pointcursor, err := UserCollection.Aggregate(ctx, mongo.Pipeline{filter_match, unwind, grouping})
+		pointcursor, err := global.UserCollection.Aggregate(ctx, mongo.Pipeline{filter_match, unwind, grouping})
 
 		if err != nil {
 			log.Println(err)

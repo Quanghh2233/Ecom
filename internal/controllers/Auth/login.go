@@ -3,20 +3,18 @@ package Auth
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
-	"github.com/Quanghh2233/Ecommerce/internal/database"
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	generate "github.com/Quanghh2233/Ecommerce/internal/token"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
-
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var UserCollection *mongo.Collection = database.UserData(database.Client, "Users")
 var Validate = validator.New()
 
 func Login() gin.HandlerFunc {
@@ -27,11 +25,11 @@ func Login() gin.HandlerFunc {
 		var founduser models.User
 
 		if err := c.BindJSON(&user); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		err := UserCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&founduser)
+		err := global.UserCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&founduser)
 		defer cancel()
 
 		if err != nil {
@@ -39,8 +37,12 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		PasswordIsValid, msg := VerifyPassword(*user.Password, *founduser.Password)
+		if founduser.Password == nil || user.Password == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "password is missing"})
+			return
+		}
 
+		PasswordIsValid, msg := VerifyPassword(*user.Password, *founduser.Password)
 		defer cancel()
 
 		if !PasswordIsValid {
@@ -49,7 +51,14 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		token, refreshtoken, _ := generate.TokenGenerator(*founduser.Email, *founduser.First_Name, *founduser.LastName, founduser.User_ID)
+		if founduser.Role == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "user role is missing"})
+			return
+		}
+
+		log.Printf("User role from database: %s", founduser.Role.Name)
+
+		token, refreshtoken, _ := generate.TokenGenerator(*founduser.Email, *founduser.First_Name, *founduser.LastName, founduser.User_ID, founduser.Role.Name)
 		defer cancel()
 
 		generate.UpdateAllToken(token, refreshtoken, founduser.User_ID)

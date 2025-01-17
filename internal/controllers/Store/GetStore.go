@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,7 +22,7 @@ func GetStore() gin.HandlerFunc {
 		}
 
 		var store models.Store
-		err = StoreCollection.FindOne(context.Background(), bson.M{"store_id": objID}).Decode(&store)
+		err = global.StoreCollection.FindOne(context.Background(), bson.M{"store_id": objID}).Decode(&store)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})

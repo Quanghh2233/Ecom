@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Quanghh2233/Ecommerce/internal/controllers/Store"
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -28,7 +28,7 @@ func SearchStore() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
-		search, err := Store.StoreCollection.Find(ctx, bson.M{
+		search, err := global.StoreCollection.Find(ctx, bson.M{
 			"$or": []bson.M{
 				{"name": bson.M{"$regex": queryParam, "$options": "i"}},
 				{"description": bson.M{"$regex": queryParam, "$options": "i"}},

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -25,6 +26,8 @@ func Authentication() gin.HandlerFunc {
 		c.Set("email", claims.Email)
 		c.Set("uid", claims.Uid)
 		c.Set("role", claims.Role)
+		log.Printf("Authenticated User Role: %s", claims.Role)
+
 		c.Next()
 	}
 }

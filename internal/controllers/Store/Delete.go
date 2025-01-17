@@ -1,4 +1,4 @@
-package Adm
+package Store
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
+	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,6 +17,38 @@ func DeleteProduct() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
+
+		userRole := c.GetString("role")
+		if userRole != models.ROLE_ADMIN && userRole != models.ROLE_SELLER {
+			c.JSON(http.StatusForbidden, gin.H{"Error": "Permission denied"})
+			return
+		}
+
+		storeID := c.Param("store_id")
+		if storeID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "store_id is required"})
+			return
+		}
+
+		objStoreID, err := primitive.ObjectIDFromHex(storeID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid store ID format"})
+			return
+		}
+
+		if userRole == models.ROLE_SELLER {
+			userID := c.GetString("user_id")
+			var store models.Store
+			err := global.StoreCollection.FindOne(ctx, bson.M{
+				"store_id": objStoreID,
+				"owner_id": userID,
+			}).Decode(&store)
+
+			if err != nil {
+				c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to delete products to this store"})
+				return
+			}
+		}
 
 		// Lấy product_id từ URL
 		productID := c.Param("product_id")

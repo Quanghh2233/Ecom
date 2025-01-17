@@ -1,8 +1,13 @@
-package Store
+package global
 
 import (
+	"github.com/Quanghh2233/Ecommerce/internal/database"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+var ProductCollection *mongo.Collection = database.ProductData(database.Client, "Products")
+var UserCollection *mongo.Collection = database.UserData(database.Client, "Users")
+var StoreCollection *mongo.Collection = database.ProductData(database.Client, "Store")
 
 type Application struct {
 	prodCollection  *mongo.Collection

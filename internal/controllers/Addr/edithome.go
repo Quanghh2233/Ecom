@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -43,7 +44,7 @@ func EditHomeAddress() gin.HandlerFunc {
 			"address.$.pin_code":   editAddress.Pincode,
 		}}
 
-		result, err := UserCollection.UpdateOne(ctx, filter, update)
+		result, err := global.UserCollection.UpdateOne(ctx, filter, update)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to update address"})
 			return

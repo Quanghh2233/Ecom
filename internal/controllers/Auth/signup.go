@@ -7,6 +7,7 @@ import (
 	"time"
 
 	helper "github.com/Quanghh2233/Ecommerce/internal/Helper"
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	generate "github.com/Quanghh2233/Ecommerce/internal/token"
 	"github.com/gin-gonic/gin"
@@ -30,7 +31,7 @@ func Signup() gin.HandlerFunc {
 			return
 		}
 
-		count, err := UserCollection.CountDocuments(ctx, bson.M{"email": user.Email})
+		count, err := global.UserCollection.CountDocuments(ctx, bson.M{"email": user.Email})
 		if err != nil {
 			log.Panic(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -42,7 +43,7 @@ func Signup() gin.HandlerFunc {
 			return
 		}
 
-		count, err = UserCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
+		count, err = global.UserCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
 		defer cancel()
 		if err != nil {
 			log.Panic(err)
@@ -69,14 +70,14 @@ func Signup() gin.HandlerFunc {
 		user.ID = primitive.NewObjectID()
 		user.User_ID = user.ID.Hex()
 
-		token, refreshtoken, _ := generate.TokenGenerator(*user.Email, *user.First_Name, *user.LastName, user.User_ID)
+		token, refreshtoken, _ := generate.TokenGenerator(*user.Email, *user.First_Name, *user.LastName, user.User_ID, user.Role.Name)
 		user.Token = &token
 		user.Refresh_Token = &refreshtoken
 		user.Role = role
 		user.UserCart = make([]models.ProdutUser, 0)
 		user.Address_Details = make([]models.Address, 0)
 		user.Order_Status = make([]models.Order, 0)
-		_, inserterr := UserCollection.InsertOne(ctx, user)
+		_, inserterr := global.UserCollection.InsertOne(ctx, user)
 		if inserterr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "the user did not get created"})
 			return

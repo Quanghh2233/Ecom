@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -53,7 +54,7 @@ func FilterProd() gin.HandlerFunc {
 			filter["rating"] = bson.M{"$gte": minRating}
 		}
 
-		cursor, err := ProductCollection.Find(ctx, filter)
+		cursor, err := global.ProductCollection.Find(ctx, filter)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"Error": "error fetching products"})
 			return

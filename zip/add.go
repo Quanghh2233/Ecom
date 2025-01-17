@@ -1,5 +1,4 @@
-// filepath: /home/qhh/advance/project/Ecom/internal/controllers/Store/Addproduct.go
-package Store
+package zip
 
 import (
 	"context"
@@ -17,22 +16,6 @@ import (
 func CreateProduct() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := context.Background()
-
-		// Retrieve and log user role from context
-		userRole, exists := c.Get("role")
-		if !exists {
-			log.Printf("User role not found in context")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "User role not found"})
-			return
-		}
-		log.Printf("User role: %v", userRole)
-
-		// Check if the user has the required role
-		if userRole != models.ROLE_ADMIN && userRole != models.ROLE_SELLER {
-			log.Printf("User does not have the required role to create a product")
-			c.JSON(http.StatusForbidden, gin.H{"error": "You do not have the required role to create a product"})
-			return
-		}
 
 		// Bind JSON request body
 		var newProduct models.Product

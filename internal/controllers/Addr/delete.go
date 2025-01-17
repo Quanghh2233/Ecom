@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -39,7 +40,7 @@ func DeleteAddress() gin.HandlerFunc {
 		filter := bson.M{"_id": userObjID}
 		update := bson.M{"$pull": bson.M{"address": bson.M{"_id": addressObjID}}}
 
-		result, err := UserCollection.UpdateOne(ctx, filter, update)
+		result, err := global.UserCollection.UpdateOne(ctx, filter, update)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to delete address"})
 			return

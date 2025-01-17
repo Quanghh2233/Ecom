@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,7 +18,7 @@ func SearchProduct() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
-		cursor, err := ProductCollection.Find(ctx, bson.D{{}})
+		cursor, err := global.ProductCollection.Find(ctx, bson.D{{}})
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, "Something went wrong, please try after some time")
 			return

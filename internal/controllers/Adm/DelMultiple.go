@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -37,7 +38,7 @@ func DelMultiple() gin.HandlerFunc {
 		}
 
 		filter := bson.M{"product_id": bson.M{"$in": objIDs}}
-		result, err := ProductCollection.DeleteMany(ctx, filter)
+		result, err := global.ProductCollection.DeleteMany(ctx, filter)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete products"})
 			return

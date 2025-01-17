@@ -5,21 +5,22 @@ import (
 	Auth "github.com/Quanghh2233/Ecommerce/internal/controllers/Auth"
 	search "github.com/Quanghh2233/Ecommerce/internal/controllers/Search"
 	store "github.com/Quanghh2233/Ecommerce/internal/controllers/Store"
+	"github.com/Quanghh2233/Ecommerce/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
 func UserRoutes(incomingRoutes *gin.Engine) {
-	incomingRoutes.POST("/users/signup", Auth.Signup())
-	incomingRoutes.POST("/users/login", Auth.Login())
+	incomingRoutes.POST("/signup", Auth.Signup())
+	incomingRoutes.POST("/login", Auth.Login())
 
 	incomingRoutes.GET("/view", controllers.SearchProduct())
 	incomingRoutes.GET("/filter", controllers.FilterProd())
 	// incomingRoutes.GET("/search", search.SearchHandler())
 
 	//admin route
-	incomingRoutes.POST("/admin/addproduct", controllers.ProductViewAdmin())
-	incomingRoutes.PUT("/admin/updateproduct/:product_id", controllers.UpdateProduct())
+	// incomingRoutes.POST("/admin/addproduct", controllers.ProductViewAdmin())
+	// incomingRoutes.PUT("/admin/updateproduct/:product_id", controllers.UpdateProduct())
 	incomingRoutes.DELETE("/admin/deleteproduct/:product_id", controllers.DeleteProduct())
 	incomingRoutes.POST("/admin/delete_multiple", controllers.DelMultiple())
 
@@ -28,6 +29,11 @@ func UserRoutes(incomingRoutes *gin.Engine) {
 	incomingRoutes.GET("/search/store", search.SearchStore())
 
 	//store route
-	incomingRoutes.GET("/stores/:store_id", store.GetStore())
-	incomingRoutes.POST("/stores/:store_id/addproduct", store.CreateProduct())
+	seller := incomingRoutes.Group("/store")
+	seller.Use(middleware.Authentication())
+	{
+		seller.GET("/:store_id", store.GetStore())
+		seller.POST("/:store_id/addproduct", store.CreateProduct())
+		seller.DELETE("/delete/:product_id", store.DeleteProduct())
+	}
 }

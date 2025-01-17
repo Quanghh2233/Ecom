@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Quanghh2233/Ecommerce/internal/controllers/Adm"
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -28,7 +28,7 @@ func SearchProductByQuery() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
-		searchquerydb, err := Adm.ProductCollection.Find(ctx, bson.M{"product_name": bson.M{"$regex": queryParam, "$options": "i"}})
+		searchquerydb, err := global.ProductCollection.Find(ctx, bson.M{"product_name": bson.M{"$regex": queryParam, "$options": "i"}})
 		if err != nil {
 			c.IndentedJSON(404, "Something went wrong while fetching the data")
 			return

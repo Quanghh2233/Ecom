@@ -5,15 +5,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Quanghh2233/Ecommerce/internal/database"
+	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
-
-var UserCollection *mongo.Collection = database.UserData(database.Client, "Users")
 
 func AddAddress() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -44,7 +42,7 @@ func AddAddress() gin.HandlerFunc {
 		matchFilter := bson.D{{Key: "$match", Value: bson.D{{Key: "_id", Value: userObjID}}}}
 		projectStage := bson.D{{Key: "$project", Value: bson.D{{Key: "addressCount", Value: bson.D{{Key: "$size", Value: "$address"}}}}}}
 
-		cursor, err := UserCollection.Aggregate(ctx, mongo.Pipeline{matchFilter, projectStage})
+		cursor, err := global.UserCollection.Aggregate(ctx, mongo.Pipeline{matchFilter, projectStage})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve address count"})
 			return
@@ -69,7 +67,7 @@ func AddAddress() gin.HandlerFunc {
 		filter := bson.M{"_id": userObjID}
 		update := bson.M{"$push": bson.M{"address": newAddress}}
 
-		_, err = UserCollection.UpdateOne(ctx, filter, update)
+		_, err = global.UserCollection.UpdateOne(ctx, filter, update)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to add address"})
 			return
