@@ -2,6 +2,7 @@ package helper
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -15,49 +16,57 @@ import (
 
 var UserCollection *mongo.Collection = database.UserData(database.Client, "Users")
 
-func SeedAdminUser() {
+func SeedAdminUser() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Đọc thông tin admin từ environment variables
+	adminEmail := os.Getenv("ADMIN_EMAIL")
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+
+	// Kiểm tra environment variables
+	if adminEmail == "" || adminPassword == "" {
+		return fmt.Errorf("ADMIN_EMAIL và ADMIN_PASSWORD phải được thiết lập trong environment variables")
+	}
+
 	// Kiểm tra xem đã có admin chưa
+	var existingAdmin models.User
+	err := UserCollection.FindOne(ctx, bson.M{"email": adminEmail}).Decode(&existingAdmin)
+	if err == nil {
+		log.Println("Admin account already exists")
+		return nil
+	} else if err != mongo.ErrNoDocuments {
+		return fmt.Errorf("error checking existing admin: %v", err)
+	}
 
-	count, err := UserCollection.CountDocuments(ctx, bson.M{"role.name": models.ROLE_ADMIN})
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("error hashing password: %v", err)
 	}
 
-	// Nếu chưa có admin nào, tạo admin đầu tiên
-	if count == 0 {
-		adminEmail := os.Getenv("ADMIN_EMAIL")       // Đọc từ env
-		adminPassword := os.Getenv("ADMIN_PASSWORD") // Đọc từ env
+	// Generate tokens
+	adminRole, _ := NewRole(models.ROLE_ADMIN, "System Administrator")
 
-		if adminEmail == "" || adminPassword == "" {
-			log.Fatal("ADMIN_EMAIL hoặc ADMIN_PASSWORD không được thiết lập")
-		}
-
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
-		if err != nil {
-			log.Fatal("Không thể mã hóa mật khẩu:", err)
-		}
-
-		role, _ := NewRole(models.ROLE_ADMIN, "System Administrator")
-
-		admin := models.User{
-			First_Name: &[]string{"Admin"}[0],
-			LastName:   &[]string{"System"}[0],
-			Email:      &adminEmail,
-			Password:   &[]string{string(hashedPassword)}[0],
-			Role:       role,
-			Create_At:  time.Now(),
-			Update_At:  time.Now(),
-			// Set các field cần thiết khác
-		}
-
-		_, err = UserCollection.InsertOne(ctx, admin)
-		if err != nil {
-			log.Fatal("Failed to seed admin user:", err)
-		} else {
-			log.Println("Admin user seeded successfully.")
-		}
+	// Tạo admin user
+	firstName := "Admin"
+	lastName := "System"
+	password := string(hashedPassword)
+	admin := models.User{
+		First_Name: &firstName,
+		LastName:   &lastName,
+		Email:      &adminEmail,
+		Password:   &password,
+		Role:       adminRole,
+		Create_At:  time.Now(),
+		Update_At:  time.Now(),
 	}
+
+	// Insert admin user vào database
+	_, err = UserCollection.InsertOne(ctx, admin)
+	if err != nil {
+		return fmt.Errorf("error creating admin user: %v", err)
+	}
+	log.Printf("Admin user created successfully with email: %s", adminEmail)
+	return nil
 }

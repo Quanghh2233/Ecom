@@ -31,7 +31,7 @@ func SearchStore() gin.HandlerFunc {
 		search, err := global.StoreCollection.Find(ctx, bson.M{
 			"$or": []bson.M{
 				{"name": bson.M{"$regex": queryParam, "$options": "i"}},
-				{"description": bson.M{"$regex": queryParam, "$options": "i"}},
+				// {"description": bson.M{"$regex": queryParam, "$options": "i"}},
 			},
 		})
 

@@ -13,7 +13,7 @@ type User struct {
 	Password        *string            `json:"password" validate:"required,min=6"`
 	Email           *string            `json:"email" validate:"email,required"`
 	Phone           *string            `json:"phone" validate:"required"`
-	Role            *Role              `json:"role" bson:"role" validate:"required,oneof=ADMIN SELLER BUYER"`
+	Role            *Role              `json:"role" bson:"role"`
 	Token           *string            `json:"token"`
 	Refresh_Token   *string            `json:"refresh_token"`
 	Create_At       time.Time          `json:"create_at"`
@@ -31,7 +31,7 @@ type Product struct {
 	Product_Name string             `json:"product_name"`
 	Description  string             `json:"description" bson:"description"`
 	Quantity     int                `json:"quantity" bson:"quantity"`
-	Price        uint64             `json:"price"`
+	Price        *float64           `json:"price"`
 	Rating       *float64           `json:"rating"`
 	Options      []ProductOption    `json:"options" bson:"options"`
 	Image        *string            `json:"image"`
@@ -41,7 +41,7 @@ type ProdutUser struct {
 	Product_ID   primitive.ObjectID `bson:"_id"`
 	Product_Name *string            `json:"product_name" bson:"product_name"`
 	Quantity     int                `json:"quantity" bson:"quantity"`
-	Price        int                `json:"price" bson:"price"`
+	Price        *float64           `json:"price" bson:"price"`
 	Rating       *float64           `json:"rating" bson:"rating"`
 	Image        *string            `json:"image" bson:"image"`
 }
@@ -59,7 +59,7 @@ type Order struct {
 	Order_ID       primitive.ObjectID `bson:"_id"`
 	Order_Cart     []ProdutUser       `json:"order_list" bson:"order_list"`
 	Ordered_At     time.Time          `json:"ordered_at" bson:"ordered_at"`
-	Price          int                `json:"total_price" bson:"total_price"`
+	Price          *float64           `json:"total_price" bson:"total_price"`
 	Discount       *int               `json:"discount" bson:"discount"`
 	Payment_method Payment            `json:"payment_method" bson:"payment_method"`
 }
@@ -76,6 +76,7 @@ type Store struct {
 	Owner       string             `json:"owner" bson:"owner"`
 	Email       string             `json:"email" bson:"email"`
 	Phone       string             `json:"phone" bson:"phone"`
+	Status      string             `json:"status" bson:"status"`
 	CreateAt    time.Time          `json:"create_at" bson:"create_at"`
 }
 
@@ -96,6 +97,10 @@ type Role struct {
 }
 
 func (r *Role) HasPermission(permission string) bool {
+	if r == nil || r.Permissions == nil {
+		return false
+	}
+
 	for _, p := range r.Permissions {
 		if p == permission {
 			return true

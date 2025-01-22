@@ -26,10 +26,11 @@ func BuyItemFromCart(ctx context.Context, userCollection *mongo.Collection, user
 		return nil, ErrCartEmpty
 	}
 
+	price := calculateTotalPrice(user.UserCart)
 	order := models.Order{
 		Order_ID:       primitive.NewObjectID(),
 		Order_Cart:     user.UserCart,
-		Price:          calculateTotalPrice(user.UserCart),
+		Price:          &price,
 		Ordered_At:     time.Now(),
 		Payment_method: models.Payment{COD: true},
 	}

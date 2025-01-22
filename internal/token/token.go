@@ -1,106 +1,86 @@
 package token
 
 import (
-	"context"
-	"log"
+	"fmt"
 	"os"
 	"time"
 
 	"github.com/Quanghh2233/Ecommerce/internal/database"
+	"github.com/Quanghh2233/Ecommerce/internal/models"
 	jwt "github.com/dgrijalva/jwt-go"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type SignedDetails struct {
-	Email      string
-	First_name string
-	Last_name  string
-	Uid        string
-	Role       string
+	Email      string `json:"email"`
+	First_name string `json:"first_name"`
+	Last_name  string `json:"last_name"`
+	Uid        string `json:"uid"`
+	Role       string `json:"role"`
+	TokenType  string `json:"token_type"`
 	jwt.StandardClaims
 }
 
-var UserData *mongo.Collection = database.UserData(database.Client, "Users")
-var SECRET_KEY = os.Getenv("SECRET_KEY")
+var (
+	UserData   *mongo.Collection = database.UserData(database.Client, "Users")
+	SECRET_KEY                   = os.Getenv("SECRET_KEY")
+)
 
-func TokenGenerator(email string, firstname string, lastname string, uid string, role string) (signedtoken string, signedrefreshtoken string, err error) {
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		return
+	}
+	SECRET_KEY = os.Getenv("SECRET_KEY")
+}
+
+func TokenGenerator(email, firstname, lastname, uid, role string) (string, string, error) {
+	if SECRET_KEY == "" {
+		return "", "", ErrSecretKeyMissing
+	}
+
 	claims := &SignedDetails{
-		Email:      email,
 		First_name: firstname,
 		Last_name:  lastname,
+		Email:      email,
 		Uid:        uid,
 		Role:       role,
+		TokenType:  "access",
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(24)).Unix(),
+			ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
 		},
 	}
 
-	refreshclaims := &SignedDetails{
+	refreshClaims := &SignedDetails{
+		// Email:     email,
+		Uid:       uid,
+		Role:      role,
+		TokenType: "refresh",
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(720)).Unix(),
+			ExpiresAt: time.Now().Add(720 * time.Hour).Unix(),
 		},
 	}
+
+	if role == models.ROLE_ADMIN {
+		claims.StandardClaims.ExpiresAt = 0
+		refreshClaims.StandardClaims.ExpiresAt = 0
+	}
+
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(SECRET_KEY))
 	if err != nil {
 		return "", "", err
 	}
 
-	refreshtoken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshclaims).SignedString([]byte(SECRET_KEY))
+	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString([]byte(SECRET_KEY))
 	if err != nil {
-		log.Panicln(err)
-		return
+		return "", "", err
 	}
-	return token, refreshtoken, err
+
+	return token, refreshToken, nil
 }
 
-func ValidateToken(signedtoken string) (claims *SignedDetails, msg string) {
-	token, err := jwt.ParseWithClaims(signedtoken, &SignedDetails{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(SECRET_KEY), nil
-	})
-
-	if err != nil {
-		msg = err.Error()
-		return
-	}
-
-	claims, ok := token.Claims.(*SignedDetails)
-	if !ok {
-		msg = "The token is invalid"
-		return
-	}
-
-	if claims.ExpiresAt < time.Now().Local().Unix() {
-		msg = "token is expired"
-		return
-	}
-
-	return claims, msg
-}
-
-func UpdateAllToken(signedtoken string, signedrefreshtoken string, userid string) {
-	var ctx, cancel = context.WithTimeout(context.Background(), time.Second*100)
-	var updateobj primitive.D
-
-	updateobj = append(updateobj, bson.E{Key: "token", Value: signedtoken})
-	updateobj = append(updateobj, bson.E{Key: "refreshtoken", Value: signedrefreshtoken})
-	updated_at, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-	updateobj = append(updateobj, bson.E{Key: "updatedat", Value: updated_at})
-	upsert := true
-	filter := bson.M{"user_id": userid}
-	opt := options.UpdateOptions{
-		Upsert: &upsert,
-	}
-
-	_, err := UserData.UpdateOne(ctx, filter, bson.D{
-		{Key: "$set", Value: updateobj},
-	},
-		&opt)
-	defer cancel()
-	if err != nil {
-		log.Panic(err)
-		return
-	}
-}
+var (
+	ErrSecretKeyMissing = fmt.Errorf("SECRET_KEY is missing")
+	ErrInvalidUserID    = fmt.Errorf("invalid user ID")
+)

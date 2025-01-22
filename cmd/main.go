@@ -36,28 +36,28 @@ func main() {
 	route.UserRoutes(router)
 	router.Use(middleware.Authentication())
 	buyer := router.Group("/")
-	buyer.Use(middleware.AuthRole("Buyer"))
+	buyer.Use(middleware.Authentication())
 
 	{
-		buyer.POST("/addaddress", addr.AddAddress())
-		buyer.PUT("/edithomeaddress", addr.EditHomeAddress())
-		buyer.PUT("/editworkaddress", addr.EditWorkAddress())
-		buyer.DELETE("/deleteaddress", addr.DeleteAddress())
+		buyer.POST("/addaddress", middleware.CheckPermission("manage_own_profile"), addr.AddAddress())
+		buyer.PUT("/edithomeaddress", middleware.CheckPermission("manage_own_profile"), addr.EditHomeAddress())
+		buyer.PUT("/editworkaddress", middleware.CheckPermission("manage_own_profile"), addr.EditWorkAddress())
+		buyer.DELETE("/deleteaddress", middleware.CheckPermission("manage_own_profile"), addr.DeleteAddress())
 
-		buyer.GET("/addtocart", app.AddToCart())
-		buyer.DELETE("/removeitem", app.RemoveItem())
-		buyer.GET("/listcart", cart.GetItemFromCart())
+		buyer.GET("/addtocart", middleware.CheckPermission("manage_own_cart"), app.AddToCart())
+		buyer.DELETE("/removeitem", middleware.CheckPermission("manage_own_cart"), app.RemoveItem())
+		buyer.GET("/listcart", middleware.CheckPermission("manage_own_cart"), cart.GetItemFromCart()) //listcart?user_id=
 
-		buyer.GET("/cartcheckout", orderApp.BuyFromCart())
-		buyer.GET("/instantbuy", orderApp.InstantBuy())
-		buyer.DELETE("/cancelorder", orderApp.CancelOrder())
-		buyer.DELETE("/cancelall", orderApp.CancelAll())
-		buyer.GET("/order_list", app.GetOrders())
+		buyer.GET("/cartcheckout", middleware.CheckPermission("place_orders"), orderApp.BuyFromCart())
+		buyer.GET("/instantbuy", middleware.CheckPermission("place_orders"), orderApp.InstantBuy())
+		buyer.DELETE("/cancelorder", middleware.CheckPermission("place_orders"), orderApp.CancelOrder())
+		buyer.DELETE("/cancelall", middleware.CheckPermission("place_orders"), orderApp.CancelAll())
+		buyer.GET("/order_list", middleware.CheckPermission("place_orders"), app.GetOrders())
 	}
 
 	//store route
 	router.POST("/admin/addstores", storeApp.AdmAddStore())
-	router.POST("/store/register", storeApp.RegisterSeller())
+	router.POST("/store/register", middleware.CheckPermission("manage_own_profile"), storeApp.RegisterSeller())
 	// router.POST("/stores/addproduct", storeApp.CreateProduct())
 
 	log.Fatal(router.Run(":" + port))

@@ -18,12 +18,13 @@ var (
 	ErrCantCancelOrders   = errors.New("can't cancel orders")
 	ErrCantBuyProduct     = errors.New("can't buy product")
 	ErrorNoItemFound      = errors.New("no item found")
+	ErrCantFindUser       = errors.New("can't find the user")
 )
 
-func calculateTotalPrice(cart []models.ProdutUser) int {
-	var total int
+func calculateTotalPrice(cart []models.ProdutUser) float64 {
+	var total float64
 	for _, item := range cart {
-		total += item.Price
+		total += *item.Price
 	}
 	return total
 }

@@ -12,6 +12,8 @@ require github.com/dgrijalva/jwt-go v3.2.0+incompatible
 
 require github.com/joho/godotenv v1.5.1
 
+require github.com/stretchr/testify v1.10.0 // indirect
+
 require (
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect

@@ -2,7 +2,6 @@ package Auth
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 
@@ -11,78 +10,102 @@ import (
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	generate "github.com/Quanghh2233/Ecommerce/internal/token"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func Signup() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
+
 		var user models.User
 		if err := c.BindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		validationErr := Validate.Struct(user)
-		if validationErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr})
+		validate := validator.New()
+		if err := validate.Struct(user); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
+		// Check for existing email
 		count, err := global.UserCollection.CountDocuments(ctx, bson.M{"email": user.Email})
 		if err != nil {
-			log.Panic(err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking email"})
 			return
 		}
-
 		if count > 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user already exists"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Email already exists"})
 			return
 		}
 
-		count, err = global.UserCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
-		defer cancel()
-		if err != nil {
-			log.Panic(err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
-			return
+		// Check for existing phone
+		if user.Phone != nil {
+			count, err = global.UserCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking phone"})
+				return
+			}
+			if count > 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Phone number already in use"})
+				return
+			}
 		}
 
+		// Create role
 		role, err := helper.NewRole(models.DEFAULT_ROLE, "Buyer account")
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user role"})
 			return
 		}
 
-		if count > 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "this phone.no is already in use"})
-			return
+		// Hash password
+		if user.Password != nil {
+			hashedPassword := HashPassword(*user.Password)
+			user.Password = &hashedPassword
 		}
 
-		password := HashPassword(*user.Password)
-		user.Password = &password
-
-		user.Create_At, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		user.Update_At, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		// Set up user metadata
+		now := time.Now()
+		user.Create_At = now
+		user.Update_At = now
 		user.ID = primitive.NewObjectID()
 		user.User_ID = user.ID.Hex()
-
-		token, refreshtoken, _ := generate.TokenGenerator(*user.Email, *user.First_Name, *user.LastName, user.User_ID, user.Role.Name)
-		user.Token = &token
-		user.Refresh_Token = &refreshtoken
 		user.Role = role
+
+		// Generate tokens
+		if user.Email != nil && user.First_Name != nil && user.LastName != nil {
+			token, refreshToken, err := generate.TokenGenerator(
+				*user.Email,
+				user.Role.Name,
+				*user.First_Name,
+				*user.LastName,
+				user.User_ID,
+			)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating tokens"})
+				return
+			}
+			user.Token = &token
+			user.Refresh_Token = &refreshToken
+		}
+
+		// Initialize empty slices
 		user.UserCart = make([]models.ProdutUser, 0)
 		user.Address_Details = make([]models.Address, 0)
 		user.Order_Status = make([]models.Order, 0)
-		_, inserterr := global.UserCollection.InsertOne(ctx, user)
-		if inserterr != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "the user did not get created"})
+
+		// Insert user into database
+		_, err = global.UserCollection.InsertOne(ctx, user)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 			return
 		}
-		defer cancel()
-		c.JSON(http.StatusCreated, "Successfully signed in!")
+
+		c.JSON(http.StatusCreated, gin.H{"message": "Successfully signed up!"})
 	}
 }

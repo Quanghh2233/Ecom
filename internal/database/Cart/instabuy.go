@@ -17,7 +17,7 @@ func InstantBuyer(ctx context.Context, prodCollection, userCollection *mongo.Col
 	}
 
 	var product models.ProdutUser
-	err = prodCollection.FindOne(ctx, bson.M{"_id": productID}).Decode(&product)
+	err = prodCollection.FindOne(ctx, bson.M{"product_id": productID}).Decode(&product)
 	if err != nil {
 		return ErrCantFindProduct
 	}
@@ -31,7 +31,7 @@ func InstantBuyer(ctx context.Context, prodCollection, userCollection *mongo.Col
 	}
 	update := bson.M{"$push": bson.M{"orders": order}}
 
-	_, err = userCollection.UpdateOne(ctx, bson.M{"_id": userObjID}, update)
+	_, err = userCollection.UpdateOne(ctx, bson.M{"user_id": userObjID}, update)
 	if err != nil {
 		return ErrCantBuyProduct
 	}

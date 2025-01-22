@@ -39,10 +39,11 @@ func BuySelectedItems(ctx context.Context, userCollection *mongo.Collection, use
 		return nil, ErrorNoItemFound
 	}
 
+	price := calculateTotalPrice(orderItems)
 	order := models.Order{
 		Order_ID:       primitive.NewObjectID(),
 		Order_Cart:     orderItems,
-		Price:          calculateTotalPrice(orderItems),
+		Price:          &price,
 		Ordered_At:     time.Now(),
 		Payment_method: models.Payment{COD: true},
 	}

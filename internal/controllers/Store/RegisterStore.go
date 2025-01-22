@@ -9,58 +9,105 @@ import (
 
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func (app *Application) RegisterSeller() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Lấy thông tin userID từ query
-		userQueryID := c.Query("user_id")
-		if userQueryID == "" {
-			log.Println("user id is empty")
-			_ = c.AbortWithError(http.StatusBadRequest, errors.New("user id is empty"))
+		// Get user ID from query
+		userID := c.Query("user_id")
+		if userID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "error",
+				"error":  "User ID is required",
+			})
 			return
 		}
 
-		// Parse dữ liệu từ request body
-		var shop models.Store
-		if err := c.ShouldBindJSON(&shop); err != nil {
-			log.Println("Invalid input:", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input data"})
+		// Parse request body
+		var store models.Store
+		if err := c.ShouldBindJSON(&store); err != nil {
+			log.Printf("Failed to parse request body: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "error",
+				"error":  "Invalid input data: " + err.Error(),
+			})
 			return
 		}
 
-		if shop.Name == "" || shop.Email == "" || shop.Phone == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+		// Validate required fields
+		if err := validateStoreInput(&store); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "error",
+				"error":  err.Error(),
+			})
 			return
 		}
 
-		// Gắn thông tin chủ shop (người dùng)
-		// firstName := c.GetString("first_name")
-		// lastName := c.GetString("last_name")
-		// ownerName := firstName + " " + lastName
-		// if ownerName == " " { // Nếu không có thông tin, đặt giá trị mặc định
-		// 	ownerName = "Anonymous"
-		// }
-		// shop.Owner = ownerName
-		shop.Owner = userQueryID
-		shop.Store_Id = primitive.NewObjectID()
-		shop.CreateAt = time.Now()
-
-		// Kết nối database và lưu thông tin shop
-		var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+		// Check for existing store
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		_, err := app.storeCollection.InsertOne(ctx, shop)
+		exists, err := app.checkStoreExists(ctx, store.Email)
 		if err != nil {
-			log.Println("Failed to register shop:", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register shop"})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status": "error",
+				"error":  "Database error",
+			})
+			return
+		}
+		if exists {
+			c.JSON(http.StatusConflict, gin.H{
+				"status": "error",
+				"error":  "Store with this email already exists",
+			})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Shop registered successfully",
-			"shop":    shop,
+		// Prepare store data
+		store.Store_Id = primitive.NewObjectID()
+		store.Owner = userID
+		store.CreateAt = time.Now()
+		store.Status = "active"
+
+		// Save to database
+		result, err := app.storeCollection.InsertOne(ctx, store)
+		if err != nil {
+			log.Printf("Failed to register store: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status": "error",
+				"error":  "Failed to register store",
+			})
+			return
+		}
+
+		c.JSON(http.StatusCreated, gin.H{
+			"status":  "success",
+			"message": "Store registered successfully",
+			"storeId": result.InsertedID,
+			"store":   store,
 		})
 	}
+}
+
+func validateStoreInput(store *models.Store) error {
+	if store.Name == "" {
+		return errors.New("store name is required")
+	}
+	if store.Email == "" {
+		return errors.New("email is required")
+	}
+	if store.Phone == "" {
+		return errors.New("phone number is required")
+	}
+	return nil
+}
+
+func (app *Application) checkStoreExists(ctx context.Context, email string) (bool, error) {
+	count, err := app.storeCollection.CountDocuments(ctx, bson.M{"email": email})
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

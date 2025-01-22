@@ -11,29 +11,37 @@ import (
 )
 
 func UserRoutes(incomingRoutes *gin.Engine) {
+	// Authentication routes
 	incomingRoutes.POST("/signup", Auth.Signup())
 	incomingRoutes.POST("/login", Auth.Login())
 
-	incomingRoutes.GET("/view", controllers.SearchProduct())
-	incomingRoutes.GET("/filter", controllers.FilterProd())
-	// incomingRoutes.GET("/search", search.SearchHandler())
-
-	//admin route
-	// incomingRoutes.POST("/admin/addproduct", controllers.ProductViewAdmin())
-	// incomingRoutes.PUT("/admin/updateproduct/:product_id", controllers.UpdateProduct())
-	incomingRoutes.DELETE("/admin/deleteproduct/:product_id", controllers.DeleteProduct())
-	incomingRoutes.POST("/admin/delete_multiple", controllers.DelMultiple())
-
-	// search route
-	incomingRoutes.GET("/search/product", search.SearchProductByQuery())
-	incomingRoutes.GET("/search/store", search.SearchStore())
-
-	//store route
-	seller := incomingRoutes.Group("/store")
-	seller.Use(middleware.Authentication())
+	// Public routes
+	public := incomingRoutes.Group("")
 	{
-		seller.GET("/:store_id", store.GetStore())
-		seller.POST("/:store_id/addproduct", store.CreateProduct())
-		seller.DELETE("/delete/:product_id", store.DeleteProduct())
+		public.GET("/view", controllers.SearchProduct())
+		public.GET("/filter", controllers.FilterProd())
+		public.GET("/search/product", search.SearchProductByQuery())
+		public.GET("/search/store", search.SearchStore())
+		public.GET("/store/:store_id", store.GetStore())
+
+	}
+
+	// Admin routes
+	adminRoutes := incomingRoutes.Group("/admin")
+	adminRoutes.Use(middleware.Authentication(), middleware.CheckPermission("admin"))
+	{
+		adminRoutes.DELETE("/deleteproduct/:product_id", controllers.DeleteProduct())
+		adminRoutes.POST("/delete_multiple", controllers.DelMultiple())
+		// adminRoutes.POST("/addproduct", controllers.ProductViewAdmin())
+		// adminRoutes.PUT("/updateproduct/:product_id", controllers.UpdateProduct())
+	}
+
+	// Store routes
+	stores := incomingRoutes.Group("/store")
+	stores.Use(middleware.Authentication())
+	{
+		stores.POST("/:store_id/addproduct", middleware.CheckPermission("manage_products"), store.CreateProduct())
+		stores.DELETE("/:store_id/delete/:product_id", middleware.CheckPermission("manage_products"), store.DeleteProduct())
+		stores.PUT("/:store_id/product/:product_id", middleware.CheckPermission("manage_products"), store.UpdateProduct())
 	}
 }

@@ -2,8 +2,6 @@ package order
 
 import (
 	"context"
-	"errors"
-	"log"
 	"net/http"
 	"time"
 
@@ -16,39 +14,37 @@ func (app *Application) InstantBuy() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		productQueryID := c.Query("pid")
 		if productQueryID == "" {
-			log.Println("product id is empty")
-
-			_ = c.AbortWithError(http.StatusBadRequest, errors.New("product id is empty"))
-
+			c.JSON(http.StatusBadRequest, gin.H{"error": "product id is empty"})
 			return
 		}
 
 		userQueryID := c.Query("userid")
 		if userQueryID == "" {
-			log.Println("user id is empty")
-
-			_ = c.AbortWithError(http.StatusBadRequest, errors.New("user id is empty"))
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user id is empty"})
 			return
 		}
 
 		productID, err := primitive.ObjectIDFromHex(productQueryID)
-
 		if err != nil {
-			log.Println(err)
-			c.AbortWithStatus(http.StatusInternalServerError)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product id format"})
 			return
 		}
 
-		var ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
-
-		defer cancel()
-
-		err = cart.InstantBuyer(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
+		userID, err := primitive.ObjectIDFromHex(userQueryID)
 		if err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, err)
-
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id format"})
+			return
 		}
 
-		c.IndentedJSON(200, "Successfully placed the order")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err = cart.InstantBuyer(ctx, app.prodCollection, app.userCollection, productID, userID.Hex())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Successfully placed the order"})
 	}
 }

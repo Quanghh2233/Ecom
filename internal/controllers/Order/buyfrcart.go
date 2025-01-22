@@ -22,6 +22,7 @@ func (app *Application) BuyFromCart() gin.HandlerFunc {
 
 		var selectedItems []string
 		if err := c.ShouldBindJSON(&selectedItems); err != nil {
+
 			c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Invalid input format"})
 			return
 		}

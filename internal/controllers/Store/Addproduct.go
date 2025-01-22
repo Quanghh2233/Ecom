@@ -83,7 +83,7 @@ func validateProduct(product models.Product) error {
 	if product.Product_Name == "" {
 		return fmt.Errorf("product name is required")
 	}
-	if product.Price <= 0 {
+	if product.Price == nil || *product.Price <= 0 {
 		return fmt.Errorf("price must be greater than 0")
 	}
 	if product.Quantity < 0 {

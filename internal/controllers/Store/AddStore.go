@@ -12,10 +12,10 @@ import (
 
 func (app *Application) AdmAddStore() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
-		var newStore models.Store
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
+		var newStore models.Store
 		if err := c.BindJSON(&newStore); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -24,15 +24,16 @@ func (app *Application) AdmAddStore() gin.HandlerFunc {
 		newStore.Store_Id = primitive.NewObjectID()
 		newStore.CreateAt = time.Now()
 
-		_, err := app.storeCollection.InsertOne(ctx, newStore)
+		result, err := app.storeCollection.InsertOne(ctx, newStore)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create store"})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Successfully created a new store!",
-			"store":   newStore,
+		c.JSON(http.StatusCreated, gin.H{
+			"message":  "Successfully created a new store!",
+			"store_id": result.InsertedID,
+			"store":    newStore,
 		})
 	}
 }
