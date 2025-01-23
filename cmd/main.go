@@ -8,6 +8,7 @@ import (
 	addr "github.com/Quanghh2233/Ecommerce/internal/controllers/Addr"
 	cart "github.com/Quanghh2233/Ecommerce/internal/controllers/Cart"
 	store "github.com/Quanghh2233/Ecommerce/internal/controllers/Store"
+	user "github.com/Quanghh2233/Ecommerce/internal/controllers/User"
 	"github.com/joho/godotenv"
 
 	order "github.com/Quanghh2233/Ecommerce/internal/controllers/Order"
@@ -29,6 +30,7 @@ func main() {
 	app := cart.NewApplication(database.ProductData(database.Client, "Products"), database.UserData(database.Client, "Users"))
 	orderApp := order.NewApplication(database.ProductData(database.Client, "Products"), database.UserData(database.Client, "Users"))
 	storeApp := store.NewApplication(database.ProductData(database.Client, "Products"), database.UserData(database.Client, "Users"), database.StoreData(database.Client, "Store"))
+	userApp := user.NewApplication(database.UserData(database.Client, "Users"), database.StoreData(database.Client, "Store"))
 
 	router := gin.New()
 	router.Use(gin.Logger())
@@ -54,7 +56,7 @@ func main() {
 		buyer.DELETE("/cancelall", middleware.CheckPermission("place_orders"), orderApp.CancelAll())
 		buyer.GET("/order_list", middleware.CheckPermission("place_orders"), app.GetOrders())
 	}
-
+	router.GET("/user/info", middleware.Authentication(), userApp.GetUserProfile())
 	//store route
 	router.POST("/admin/addstores", storeApp.AdmAddStore())
 	router.POST("/store/register", middleware.CheckPermission("manage_own_profile"), storeApp.RegisterSeller())

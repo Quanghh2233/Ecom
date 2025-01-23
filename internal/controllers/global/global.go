@@ -8,6 +8,7 @@ import (
 var ProductCollection *mongo.Collection = database.ProductData(database.Client, "Products")
 var UserCollection *mongo.Collection = database.UserData(database.Client, "Users")
 var StoreCollection *mongo.Collection = database.ProductData(database.Client, "Store")
+var App *Application
 
 type Application struct {
 	prodCollection  *mongo.Collection

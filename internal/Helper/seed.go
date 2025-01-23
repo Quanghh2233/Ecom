@@ -9,6 +9,7 @@ import (
 
 	"github.com/Quanghh2233/Ecommerce/internal/database"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
+	"github.com/Quanghh2233/Ecommerce/internal/token"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
@@ -47,19 +48,24 @@ func SeedAdminUser() error {
 
 	// Generate tokens
 	adminRole, _ := NewRole(models.ROLE_ADMIN, "System Administrator")
-
+	tokenString, refreshToken, err := token.TokenGenerator(adminEmail, "Admin", "System", "", adminRole.Name)
+	if err != nil {
+		return fmt.Errorf("error generating tokens: %v", err)
+	}
 	// Tạo admin user
 	firstName := "Admin"
 	lastName := "System"
 	password := string(hashedPassword)
 	admin := models.User{
-		First_Name: &firstName,
-		LastName:   &lastName,
-		Email:      &adminEmail,
-		Password:   &password,
-		Role:       adminRole,
-		Create_At:  time.Now(),
-		Update_At:  time.Now(),
+		First_Name:    &firstName,
+		LastName:      &lastName,
+		Email:         &adminEmail,
+		Password:      &password,
+		Role:          adminRole,
+		Token:         &tokenString,
+		Refresh_Token: &refreshToken,
+		Create_At:     time.Now(),
+		Update_At:     time.Now(),
 	}
 
 	// Insert admin user vào database
