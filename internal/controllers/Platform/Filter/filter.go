@@ -9,6 +9,7 @@ import (
 	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func FilterProd() gin.HandlerFunc {
@@ -21,8 +22,10 @@ func FilterProd() gin.HandlerFunc {
 		minPrice := c.Query("min_price")
 		maxPrice := c.Query("max_price")
 		minRating := c.Query("minRating")
+		sortPrice := c.Query("sort_price") // asc or desc
 
 		filter := bson.M{}
+		opts := options.Find()
 
 		if brand != "" {
 			filter["brand"] = brand
@@ -54,7 +57,10 @@ func FilterProd() gin.HandlerFunc {
 			filter["rating"] = bson.M{"$gte": minRating}
 		}
 
-		cursor, err := global.ProductCollection.Find(ctx, filter)
+		// Call the sort function
+		applySortPrice(opts, sortPrice)
+
+		cursor, err := global.ProductCollection.Find(ctx, filter, opts)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"Error": "error fetching products"})
 			return
@@ -68,5 +74,16 @@ func FilterProd() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"filtered_products": products})
+	}
+}
+
+// applySortPrice applies sorting by price to the MongoDB find options
+func applySortPrice(opts *options.FindOptions, sortPrice string) {
+	if sortPrice != "" {
+		sortDirection := 1 // default ascending
+		if sortPrice == "desc" {
+			sortDirection = -1
+		}
+		opts.SetSort(bson.D{{Key: "price", Value: sortDirection}})
 	}
 }

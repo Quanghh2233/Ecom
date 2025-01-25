@@ -1,79 +1,78 @@
-package zip
+package Addr
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"net/http"
+	"time"
 
 	"github.com/Quanghh2233/Ecommerce/internal/controllers/global"
 	"github.com/Quanghh2233/Ecommerce/internal/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func CreateProduct() gin.HandlerFunc {
+func AddAddress() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx := context.Background()
-
-		// Bind JSON request body
-		var newProduct models.Product
-		if err := c.BindJSON(&newProduct); err != nil {
-			log.Printf("Failed to bind JSON: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		user_id := c.Query("id")
+		if user_id == "" {
+			c.Header("Content-Type", "application/json")
+			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid code"})
+			c.Abort()
 			return
 		}
-
-		// Validate required fields
-		if err := validateProduct(newProduct); err != nil {
-			log.Printf("Validation error: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		// Check if store exists using store_id
-		var store models.Store
-		err := global.StoreCollection.FindOne(ctx, bson.M{"store_id": newProduct.Store_ID}).Decode(&store)
+		userObjID, err := primitive.ObjectIDFromHex(user_id)
 		if err != nil {
-			log.Printf("Store not found: %v", err)
-			c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 			return
 		}
 
-		// Set product ID and store name
-		newProduct.Product_ID = primitive.NewObjectID()
-		newProduct.Store_Name = store.Name // Ensure store name matches the found store
+		var newAddress models.Address
+		newAddress.Address_id = primitive.NewObjectID()
 
-		// Insert product
-		result, err := global.ProductCollection.InsertOne(ctx, newProduct)
+		if err := c.BindJSON(&newAddress); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid address format"})
+			return
+		}
+
+		var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		matchFilter := bson.D{{Key: "$match", Value: bson.D{{Key: "_id", Value: userObjID}}}}
+		projectStage := bson.D{{Key: "$project", Value: bson.D{{Key: "addressCount", Value: bson.D{{Key: "$size", Value: "$address"}}}}}}
+
+		cursor, err := global.UserCollection.Aggregate(ctx, mongo.Pipeline{matchFilter, projectStage})
 		if err != nil {
-			log.Printf("Failed to create product: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create product"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve address count"})
 			return
 		}
 
-		c.JSON(http.StatusCreated, gin.H{
-			"message": "Product created successfully",
-			"product": newProduct,
-			"id":      result.InsertedID,
-		})
-	}
-}
+		var result []bson.M
+		if err = cursor.All(ctx, &result); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process address count"})
+			return
+		}
 
-// Helper function to validate product
-func validateProduct(product models.Product) error {
-	if product.Product_Name == "" {
-		return fmt.Errorf("product name is required")
+		var addressCount int32
+		if len(result) > 0 {
+			addressCount = result[0]["addressCount"].(int32)
+		}
+
+		if addressCount >= 2 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Not Allow "})
+			return
+		}
+
+		filter := bson.M{"_id": userObjID}
+		update := bson.M{"$push": bson.M{"address": newAddress}}
+
+		_, err = global.UserCollection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"Error": "Failed to add address"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Address added successfully"})
 	}
-	if product.Price <= 0 {
-		return fmt.Errorf("price must be greater than 0")
-	}
-	if product.Quantity < 0 {
-		return fmt.Errorf("quantity cannot be negative")
-	}
-	if product.Store_ID.IsZero() {
-		return fmt.Errorf("store_id is required")
-	}
-	return nil
 }
