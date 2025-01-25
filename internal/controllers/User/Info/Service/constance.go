@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	repository "github.com/Quanghh2233/Ecommerce/internal/controllers/User/User/Repository"
+	repository "github.com/Quanghh2233/Ecommerce/internal/controllers/User/Info/Repository"
 )
 
 type UserService interface {

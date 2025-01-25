@@ -1,4 +1,4 @@
-package Store
+package Admin
 
 import (
 	"go.mongodb.org/mongo-driver/mongo"

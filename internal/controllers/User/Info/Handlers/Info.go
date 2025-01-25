@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	service "github.com/Quanghh2233/Ecommerce/internal/controllers/User/User/Service"
+	service "github.com/Quanghh2233/Ecommerce/internal/controllers/User/Info/Service"
 	"github.com/gin-gonic/gin"
 )
 

@@ -1,4 +1,4 @@
-package Adm
+package Admin
 
 import (
 	"context"
